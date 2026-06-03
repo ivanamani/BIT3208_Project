@@ -1,21 +1,19 @@
 <?php
 include('db_connect.php');
 
+// 1. We check if the form was actually submitted
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $username = mysqli_real_escape_string($conn, $_POST['username']);
-    $password = mysqli_real_escape_string($conn, $_POST['password']);
+    
+    // 2. We capture the username and password the user typed in
+    $captured_username = $_POST['username'];
+    $captured_password = $_POST['password'];
 
-    // Query to find the user in the database
-    $sql = "SELECT * FROM users WHERE username = '$username' AND password = '$password'";
-    $result = mysqli_query($conn, $sql);
-
-    // If the database returns 1 matching row, login is successful
-    if (mysqli_num_rows($result) == 1) {
-        echo "<h1>Login Successful!</h1>";
-        echo "<p>Welcome back, " . htmlspecialchars($username) . "!</p>";
-    } else {
-        echo "<h1>Login Failed</h1>";
-        echo "<p>Invalid username or password. Please try again.</p>";
-    }
+    // 3. We print a dynamic welcome message using the username
+    echo "<h1>Welcome to Sea of Games!</h1>";
+    echo "<p>We have successfully received your login request, <strong>" . htmlspecialchars($captured_username) . "</strong>!</p>";
+    
+} else {
+    // If someone tries to just type the URL directly without logging in, we show an error.
+    echo "Error: Please use the login form.";
 }
 ?>
