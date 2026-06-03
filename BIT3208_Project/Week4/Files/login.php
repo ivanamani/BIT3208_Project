@@ -1,8 +1,38 @@
+<?php
+session_start();
+require_once 'db_connect.php';
+
+$error_message = "";
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $username = $_POST['username'];
+    $password = $_POST['password'];
+    
+    $sql = "SELECT * FROM users WHERE username = '$username'";
+    $result = mysqli_query($conn, $sql);
+    
+    if (mysqli_num_rows($result) > 0) {
+        $user = mysqli_fetch_assoc($result);
+        
+        if ($password == $user['password']) {
+            $_SESSION['user_id'] = $user['id'];
+            $_SESSION['username'] = $user['username'];
+            
+            header("Location: welcome.php");
+            exit(); 
+        } else {
+            $error_message = "Password mismatch! You typed: '$password'. DB has: '" . $user['password'] . "'";
+        }
+    } else {
+        $error_message = "Username '$username' not found in the database table.";
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Sea of Games - Logi</title>
+    <title>Sea of Games - Login</title>
     <style>
         body { font-family: Arial, sans-serif; background-color: #1e1e24; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         .login-container { background: #2a2a35; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); width: 300px; }
@@ -20,18 +50,21 @@
 <div class="login-container">
     <h2>Sea of Games Login</h2>
     
-    <div id="error-message"></div>
+    <div id="error-message"><?php echo $error_message; ?></div>
 
-   <form id="loginForm" action="process_login.php" method="POST">
-    <label>Username:</label>
-    <input type="text" name="username" required>
-    
-    <label>Password:</label>
-    <input type="password" name="password" id="password" onkeyup="checkStrength()" required>
-    <p id="strength-message"></p>
-
-    <button type="submit">Login</button>
-</form>
+    <form id="loginForm" action="login.php" method="POST">
+        <label>Username:</label>
+        <input type="text" name="username" id="usernameField" oninput="updatePreview()" required>
+        <p id="usernamePreview"></p>
+        
+        <label>Password:</label>
+        <input type="password" name="password" id="password" onkeyup="checkStrength()" required>
+        <p id="strength-message"></p>
+        
+        <button type="button" id="menuButton" onclick="toggleMenu()">Open Menu</button>
+        <button type="submit" class="btn">Login</button>
+    </form>
+</div>
 
 <script>
     function checkStrength() {
@@ -50,6 +83,22 @@
             message.innerText = "Strong";
             message.style.color = "green";
         }
+    }
+
+    function toggleMenu() {
+        let menu = document.getElementById("myMenu");
+        if (menu) {
+            if (menu.style.display == "none" || menu.style.display == "") {
+                menu.style.display = "block";
+            } else {
+                menu.style.display = "none";
+            }
+        }
+    }
+
+    function updatePreview() {
+        let typedText = document.getElementById("usernameField").value;
+        document.getElementById("usernamePreview").innerText = typedText;
     }
 </script>
 </body>

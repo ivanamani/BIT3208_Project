@@ -1,3 +1,43 @@
+<?php
+// 1. Pull in the database connection file
+require_once 'db_connect.php';
+
+// 2. Check if the login form was actually submitted
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    
+    // 3. Collect the inputs from the form $_POST array
+    $username = $_POST['username'];
+    $password = $_POST['password'];
+    
+    // 4. Construct the SQL query string
+    // (This assumes your table is named 'users' and column is 'username')
+    $sql = "SELECT * FROM users WHERE username = '$username'";
+    
+    // 5. Run the query against the database using the $conn variable from db_connect.php
+    $result = mysqli_query($conn, $sql);
+    
+    // 6. Check if the query found at least one matching user record
+    if (mysqli_num_rows($result) > 0) {
+        
+        // Fetch the matching user record as an associative array
+        $user = mysqli_fetch_assoc($result);
+        
+        // 7. Verify if the entered password matches the password in the database
+        // (Note: This is a plain-text check typically used in introductory assignments)
+        if ($password == $user['password']) {
+            echo "<p style='color:green; font-weight:bold;'>Login successful! Welcome, " . htmlspecialchars($username) . ".</p>";
+            
+            // TODO: In future steps, you will add session handling and redirects here
+            
+        } else {
+            echo "<p style='color:red; font-weight:bold;'>Invalid password. Please try again.</p>";
+        }
+        
+    } else {
+        echo "<p style='color:red; font-weight:bold;'>Username does not exist.</p>";
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -24,12 +64,12 @@
 
    <form id="loginForm" action="process_login.php" method="POST">
     <label>Username:</label>
-    <input type="text" name="username" required>
-    
+   <input type="text" name="username" id="usernameField" oninput="updatePreview()" required>
+    <p id="usernamePreview"></p>
     <label>Password:</label>
     <input type="password" name="password" id="password" onkeyup="checkStrength()" required>
     <p id="strength-message"></p>
-
+    <button id="menuButton" onclick="toggleMenu()">Open Menu</button>
     <button type="submit">Login</button>
 </form>
 
@@ -51,6 +91,23 @@
             message.style.color = "green";
         }
     }
+function toggleMenu() {
+    let menu = document.getElementById("myMenu");
+    if (menu.style.display == "none") {
+        menu.style.display = "block";
+    } 
+    else {
+        menu.style.display = "none";
+    }
+    
+}
+function updatePreview() {
+    // 1. Get what was typed in the input field
+    let typedText = document.getElementById("usernameField").value;
+
+    // 2. Put that text into the paragraph preview
+    document.getElementById("usernamePreview").innerText = typedText;
+}
 </script>
 </body>
 </html>

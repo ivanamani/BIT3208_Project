@@ -1,3 +1,6 @@
+<?php
+require_once 'db_connect.php';
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -24,12 +27,12 @@
 
    <form id="loginForm" action="process_login.php" method="POST">
     <label>Username:</label>
-    <input type="text" name="username" required>
-    
+   <input type="text" name="username" id="usernameField" oninput="updatePreview()" required>
+    <p id="usernamePreview"></p>
     <label>Password:</label>
     <input type="password" name="password" id="password" onkeyup="checkStrength()" required>
     <p id="strength-message"></p>
-
+    <button id="menuButton" onclick="toggleMenu()">Open Menu</button>
     <button type="submit">Login</button>
 </form>
 
@@ -51,6 +54,23 @@
             message.style.color = "green";
         }
     }
+function toggleMenu() {
+    let menu = document.getElementById("myMenu");
+    if (menu.style.display == "none") {
+        menu.style.display = "block";
+    } 
+    else {
+        menu.style.display = "none";
+    }
+    
+}
+function updatePreview() {
+    // 1. Get what was typed in the input field
+    let typedText = document.getElementById("usernameField").value;
+
+    // 2. Put that text into the paragraph preview
+    document.getElementById("usernamePreview").innerText = typedText;
+}
 </script>
 </body>
 </html>
