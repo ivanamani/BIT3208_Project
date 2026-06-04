@@ -17,7 +17,7 @@ if (!isset($_SESSION['username'])) {
     <title>Welcome</title>
 </head>
 <body>
-    <h1>Welcome, <?php echo htmlspecialchars($_SESSION['username']); ?>! 🎉</h1>
+    <h1>Welcome, <?php echo htmlspecialchars($_SESSION['username']); ?>! </h1>
     <p>You have successfully logged into your dynamic dashboard.</p>
     
     <br>
