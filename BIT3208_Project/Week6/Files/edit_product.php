@@ -1,9 +1,11 @@
 <?php
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-
+// 1. Always start the session and database once at the absolute top
 session_start();
 require_once 'db_connect.php';
+
+// Turn on error reporting for safe development debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
 // Access Control
 if (!isset($_SESSION['username'])) {
@@ -14,34 +16,15 @@ if (!isset($_SESSION['username'])) {
 $message = "";
 $product_id = "";
 
-// 1. Fetch the product details to fill the form fields
-if (isset($_GET['id'])) {
-    $product_id = mysqli_real_escape_string($conn, $_GET['id']);
-    $select_sql = "SELECT * FROM products WHERE id = '$product_id'";
-    $result = mysqli_query($conn, $select_sql);
-    
-    if ($result && mysqli_num_rows($result) > 0) {
-        $product = mysqli_fetch_assoc($result);
-    } else {
-        die("Error: Product not found.");
-    }
-} else if (!isset($_POST['update_product'])) {
-    header("Location: products.php");
-    exit();
-}
-
-// 2. Handle the update submission
+// 2. Handle the update submission FIRST if the form was posted
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_product'])) {
     $product_id = mysqli_real_escape_string($conn, $_POST['id']);
     $name = mysqli_real_escape_string($conn, $_POST['name']);
-    
-    // Using real_escape_string prevents the SQL syntax errors from quotes seen in your screenshot!
     $description = mysqli_real_escape_string($conn, $_POST['description']);
     $price = mysqli_real_escape_string($conn, $_POST['price']);
     $stock = intval($_POST['stock']);
     $image = mysqli_real_escape_string($conn, $_POST['image']);
 
-    // Added 'image' to the update query string
     $update_sql = "UPDATE products SET 
                     name = '$name', 
                     description = '$description', 
@@ -55,8 +38,30 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_product'])) {
         header("Location: products.php");
         exit();
     } else {
+        // Retain the error message if something goes wrong
         $message = "<div class='alert alert-danger'>❌ Update Failed: " . mysqli_error($conn) . "</div>";
     }
+}
+
+// 3. Identify the target product ID safely from either GET or POST
+if (isset($_GET['id'])) {
+    $product_id = mysqli_real_escape_string($conn, $_GET['id']);
+} elseif (isset($_POST['id'])) {
+    $product_id = mysqli_real_escape_string($conn, $_POST['id']);
+} else {
+    // No valid ID found anywhere? Boot them back to the catalog safely
+    header("Location: products.php");
+    exit();
+}
+
+// 4. Fetch the fresh product details to populate/re-populate the form fields
+$select_sql = "SELECT * FROM products WHERE id = '$product_id'";
+$result = mysqli_query($conn, $select_sql);
+
+if ($result && mysqli_num_rows($result) > 0) {
+    $product = mysqli_fetch_assoc($result);
+} else {
+    die("Error: Product not found.");
 }
 ?>
 <!DOCTYPE html>
@@ -64,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_product'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modify Product #<?php echo $product_id; ?></title>
+    <title>Modify Product #<?php echo htmlspecialchars($product_id); ?></title>
     <style>
         :root {
             --bg-dark: #161522;
@@ -170,7 +175,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_product'])) {
 <div class="modify-container">
     <h2>Modify Product #<?php echo htmlspecialchars($product_id); ?></h2>
     
-    <?php echo $message; ?>
+    <?php if (!empty($message)) { echo $message; } ?>
 
     <form method="POST" action="edit_product.php">
         <input type="hidden" name="id" value="<?php echo htmlspecialchars($product['id']); ?>">

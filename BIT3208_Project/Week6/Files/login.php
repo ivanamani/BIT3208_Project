@@ -1,33 +1,31 @@
 <?php
+// 1. ABSOLUTE TOP - Starts session and grabs your universal DB configuration
 session_start();
-// 1. Connect to your database (adjust dbname, user, password to match your config)
-$conn = mysqli_connect("localhost", "root", "", "sea_of_games_week5");
+require_once 'db_connect.php'; 
 
 $error = "";
 
 // 2. Check if the form was submitted
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    // $conn comes directly out of your db_connect.php file cleanly!
     $username = mysqli_real_escape_string($conn, $_POST['username']);
     $password = mysqli_real_escape_string($conn, $_POST['password']);
 
     // 3. Query the database for the user
-    // (Note: If you use password_hash, you'll need password_verify here instead)
     $query = "SELECT * FROM users WHERE username='$username' AND password='$password'";
     $result = mysqli_query($conn, $query);
 
     if (mysqli_num_rows($result) == 1) {
         $_SESSION['username'] = $username;
         
-        // 🚀 THIS IS THE LINE THAT TAKES YOU TO THE DASHBOARD:
-        header("Location: dashboard.php"); 
+        // 🚀 Redirects straight to your main inventory list dashboard
+        header("Location: products.php"); 
         exit();
     } else {
         $error = "Invalid username or password!";
     }
 }
 ?>
-<!DOCTYPE html>
-...
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -76,7 +74,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             text-align: center;
         }
 
-        /* Logo Branding styling from dashboard */
         .logo-container {
             margin-bottom: 12px;
         }
@@ -98,7 +95,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             margin-bottom: 32px;
         }
 
-        /* Clean modern Alert banner for invalid credentials */
         .error-banner {
             background-color: var(--error-bg);
             color: var(--error-text);
@@ -141,7 +137,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             box-shadow: 0 0 0 4px rgba(182, 70, 253, 0.12);
         }
 
-        /* Action button utilizing the accent color system */
         .login-btn {
             width: 100%;
             padding: 14px;
@@ -188,7 +183,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <p class="subtitle">Sign in to manage your video game vault</p>
 
         <?php 
-        // Swap '$error' with whatever variable holding your "Invalid credentials" string
         if (isset($error) && !empty($error)): 
         ?>
             <div class="error-banner">

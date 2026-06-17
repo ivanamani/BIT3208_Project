@@ -1,52 +1,52 @@
 <?php
-// 1. Force errors to display on screen instead of a blank page if something breaks
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-
+// 1. Always start the session first
 session_start();
-require_once 'db_connect.php';
 
-// 2. Access Control: Only logged-in users can view this page
+// 2. Enforce authentication (Kick out users who aren't logged in)
 if (!isset($_SESSION['username'])) {
     header("Location: login.php");
     exit();
 }
 
-$message = "";
+// 3. Connect to your database seamlessly
+require_once 'db_connect.php'; 
 
-// --- CREATE OPERATION (Add New Product) ---
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_product'])) {
-    $name = mysqli_real_escape_string($conn, $_POST['name']);
-    $description = mysqli_real_escape_string($conn, $_POST['description']);
-    $price = mysqli_real_escape_string($conn, $_POST['price']);
-    
-    $image = isset($_POST['image']) && $_POST['image'] !== '' ? mysqli_real_escape_string($conn, $_POST['image']) : 'default.png';
-    $stock = isset($_POST['stock']) ? intval($_POST['stock']) : 0;
+$message = ""; // Container for success/error alerts
 
-    $insert_sql = "INSERT INTO products (name, description, price, image, stock) VALUES ('$name', '$description', '$price', '$image', '$stock')";
-    
-    if (mysqli_query($conn, $insert_sql)) {
-        $message = "<div class='alert alert-success'>🎮 Game added to inventory successfully!</div>";
-    } else {
-        $message = "<div class='alert alert-danger'>❌ Error adding product: " . mysqli_error($conn) . "</div>";
-    }
-}
-
-// --- DELETE OPERATION (Remove Product) ---
+// 4. Handle Deletion Request (FIXED)
 if (isset($_GET['delete_id'])) {
-    $delete_id = mysqli_real_escape_string($conn, $_GET['delete_id']);
-    $delete_sql = "DELETE FROM products WHERE id = '$delete_id'";
-    if (mysqli_query($conn, $delete_sql)) {
-        header("Location: products.php"); 
-        exit();
+    // Securely cast the ID to an integer to prevent SQL injection vulnerabilities
+    $delete_id = intval($_GET['delete_id']);
+    $delete_query = "DELETE FROM products WHERE id = $delete_id";
+    
+    if (mysqli_query($conn, $delete_query)) {
+        $message = "<div class='alert alert-success'>🗑️ Product #$delete_id deleted successfully!</div>";
     } else {
-        $message = "<div class='alert alert-danger'>❌ Error deleting product: " . mysqli_error($conn) . "</div>";
+        $message = "<div class='alert alert-danger'>❌ Error deleting item: " . mysqli_error($conn) . "</div>";
     }
 }
 
-// --- READ OPERATION (Fetch All Records) ---
-$query_sql = "SELECT * FROM products ORDER BY id DESC";
-$products_result = mysqli_query($conn, $query_sql);
+// 5. Safely handle form submissions (Adding products)
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_product'])) {
+    $name = mysqli_real_escape_string($conn, $_POST['name']);
+    $image = mysqli_real_escape_string($conn, $_POST['image']);
+    $price = mysqli_real_escape_string($conn, $_POST['price']);
+    $stock = intval($_POST['stock']);
+    $description = mysqli_real_escape_string($conn, $_POST['description']);
+
+    $insert_query = "INSERT INTO products (name, image, price, stock, description) 
+                     VALUES ('$name', '$image', '$price', '$stock', '$description')";
+    
+    if (mysqli_query($conn, $insert_query)) {
+        $message = "<div class='alert alert-success'>🎉 \"$name\" has been added to your catalog successfully!</div>";
+    } else {
+        $message = "<div class='alert alert-danger'>❌ Error inserting item: " . mysqli_error($conn) . "</div>";
+    }
+}
+
+// 6. Fetch all products to display down in the inventory list table
+$query = "SELECT * FROM products ORDER BY id DESC";
+$products_result = mysqli_query($conn, $query);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -103,6 +103,20 @@ $products_result = mysqli_query($conn, $query_sql);
             display: flex;
             align-items: center;
             gap: 15px;
+        }
+        .btn-nav-link {
+            color: var(--primary-purple);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            padding: 8px 16px;
+            border: 1px solid var(--primary-purple);
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+        .btn-nav-link:hover {
+            color: #fff;
+            background: var(--primary-purple);
         }
         .logout-btn {
             color: var(--text-muted);
@@ -277,12 +291,13 @@ $products_result = mysqli_query($conn, $query_sql);
     <header class="dashboard-header">
         <div class="logo-text"><span>Sea</span>ofGames</div>
         <div class="user-badge">
+            <a href="dashboard.php" class="btn-nav-link">👁️ View Public Storefront</a>
             <span>Welcome, <strong><?php echo htmlspecialchars($_SESSION['username']); ?></strong>! 👋</span>
             <a href="logout.php" class="logout-btn">Logout</a>
         </div>
     </header>
 
-    <?php echo $message; ?>
+    <?php if (!empty($message)) { echo $message; } ?>
 
     <div class="form-container">
         <h3>Add New Product</h3>
@@ -334,7 +349,6 @@ $products_result = mysqli_query($conn, $query_sql);
                 </thead>
                 <tbody>
                     <?php 
-                    // Verify that the query executed successfully and records exist
                     if ($products_result && mysqli_num_rows($products_result) > 0) {
                         while($row = mysqli_fetch_assoc($products_result)) { 
                     ?>
@@ -363,7 +377,6 @@ $products_result = mysqli_query($conn, $query_sql);
                     <?php 
                         } 
                     } else {
-                        // Safe fallback layout if database has no records or a connection hitch occurs
                         $error_suffix = (!$products_result) ? " Error: " . mysqli_error($conn) : "";
                         echo "<tr><td colspan='6' style='text-align:center; padding: 30px; color: var(--text-muted);'>No games found in your inventory database.$error_suffix</td></tr>";
                     }
