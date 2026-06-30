@@ -11,8 +11,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
     if (isset($_POST['username']) && isset($_POST['password'])) {
         
-        $username = mysqli_real_escape_string($conn, $_POST['username']);
-        $password = $_POST['password']; 
+        $username = mysqli_real_escape_string($conn, trim($_POST['username']));
+        $password = trim($_POST['password']); 
 
         // 4. Look up the user in your database
         $sql = "SELECT * FROM users WHERE username='$username'";
@@ -21,18 +21,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if ($result && mysqli_num_rows($result) > 0) {
             $user = mysqli_fetch_assoc($result);
             
-            // 5. DIRECT COMPARISON (Before Hashing)
-           if (password_verify($password, trim($user['password']))) {
+            // 5. Verify the password against the stored hash
+            if (password_verify($password, trim($user['password']))) {
                 
                 // Set your session variables
                 $_SESSION['username'] = $user['username'];
                 $_SESSION['role'] = $user['role']; 
 
-                // 6. Direct them to the correct dashboard based on privilege
+                // 6. Direct them based on role privilege
                 if ($user['role'] === 'admin') {
-                    header("Location: products.php");
+                    header("Location: products.php"); // Admin panel to manage games
                 } else {
-                    header("Location: dashboard.php");
+                    header("Location: dashboard.php"); // Customer dashboard to browse & buy
                 }
                 exit();
                 

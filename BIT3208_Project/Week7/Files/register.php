@@ -5,10 +5,13 @@ require_once 'db_connect.php';
 $message = ""; 
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    // Collect form data
-    $username = $_POST['username'];
-    $email = $_POST['email'];
-    $password = $_POST['password']; // Stored as plain text
+    // Collect and sanitize form data
+    $username = mysqli_real_escape_string($conn, trim($_POST['username']));
+    $email = mysqli_real_escape_string($conn, trim($_POST['email']));
+    $plain_password = $_POST['password']; 
+
+    // 1. Hash the password securely
+    $hashed_password = password_hash($plain_password, PASSWORD_DEFAULT);
 
     // Check if username already exists
     $check_sql = "SELECT * FROM users WHERE username = '$username'";
@@ -17,10 +20,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (mysqli_num_rows($check_result) > 0) {
         $message = "<p style='color:red; font-weight:bold;'>Username already taken.</p>";
     } else {
-        // Construct insertion query using plain text variables
-        $sql = "INSERT INTO users (username, email, password) VALUES ('$username', '$email', '$password')";
+        // 2. Insert user with the hashed password and default 'customer' role
+        $sql = "INSERT INTO users (username, email, password, role) VALUES ('$username', '$email', '$hashed_password', 'customer')";
         
-        // Execute query
         if (mysqli_query($conn, $sql)) {
             $message = "<p style='color:green; font-weight:bold;'>Registration successful! <a href='login.php'>Login here</a>.</p>";
         } else {
